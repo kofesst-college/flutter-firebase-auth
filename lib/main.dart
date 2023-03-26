@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_firebase_auth/firebase_options.dart';
 import 'package:flutter_firebase_auth/screens/email_password_auth_screen.dart';
 import 'package:flutter_firebase_auth/screens/guest_auth_screen.dart';
+import 'package:flutter_firebase_auth/screens/profile_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -64,6 +65,7 @@ class MyApp extends StatelessWidget {
       routes: {
         "/auth/email-password": (ctx) => EmailPasswordAuthScreen(),
         "/auth/guest": (ctx) => GuestAuthScreen(),
+        "/profile": (ctx) => ProfileScreen(),
       },
       initialRoute: "/auth/email-password",
     );

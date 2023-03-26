@@ -1,60 +1,82 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_firebase_auth/firestore/firestore_utils.dart';
+import 'package:flutter_firebase_auth/utils/auth_response.dart';
 
 class EmailPasswordAuthScreen extends StatelessWidget {
   EmailPasswordAuthScreen({Key? key}) : super(key: key);
 
   final _formKey = GlobalKey<FormState>();
   final emailController = TextEditingController();
+  final usernameController = TextEditingController();
   final passwordController = TextEditingController();
 
-  Future<String?> signIn() async {
+  Future<AuthResponse> signIn() async {
     final auth = FirebaseAuth.instance;
     try {
-      await auth.signInWithEmailAndPassword(
+      final credential = await auth.signInWithEmailAndPassword(
         email: emailController.text,
         password: passwordController.text,
       );
-      return null;
+      final uid = credential.user?.uid;
+      if (uid == null) {
+        return const Failed("Ошибка при авторизации");
+      }
+      final profile = await FirestoreUtils.getUser(authUid: uid);
+      if (profile == null) {
+        return const Failed("Профиль не найден");
+      }
+      return Success(profile);
     } on FirebaseAuthException catch (e) {
       if (e.code == 'weak-password') {
-        return 'Пароль слишком слабый';
+        return const Failed('Пароль слишком слабый');
       } else if (e.code == 'email-already-in-use') {
-        return 'Этот адрес уже используется';
+        return const Failed('Этот адрес уже используется');
       } else if (e.code == 'invalid-email') {
-        return 'Некорректный email';
+        return const Failed('Некорректный email');
       } else if (e.code == 'user-not-found') {
-        return 'Пользователь не найден';
+        return const Failed('Пользователь не найден');
       } else {
-        return e.code;
+        return Failed(e.code);
       }
     } catch (e) {
-      return e.toString();
+      return Failed(e.toString());
     }
   }
 
-  Future<String?> signUp() async {
+  Future<AuthResponse> signUp() async {
     final auth = FirebaseAuth.instance;
     try {
-      await auth.createUserWithEmailAndPassword(
+      final credential = await auth.createUserWithEmailAndPassword(
         email: emailController.text,
         password: passwordController.text,
       );
-      return null;
+      final uid = credential.user?.uid;
+      if (uid == null) {
+        return const Failed("Ошибка при регистрации");
+      }
+      final profile = await FirestoreUtils.createUser(
+        authUid: uid,
+        username: emailController.text,
+      );
+      if (profile == null) {
+        return const Failed("Ошибка при создании профиля");
+      }
+      return Success(profile);
     } on FirebaseAuthException catch (e) {
       if (e.code == 'weak-password') {
-        return 'Пароль слишком слабый';
+        return const Failed('Пароль слишком слабый');
       } else if (e.code == 'email-already-in-use') {
-        return 'Этот адрес уже используется';
+        return const Failed('Этот адрес уже используется');
       } else if (e.code == 'invalid-email') {
-        return 'Некорректный email';
+        return const Failed('Некорректный email');
       } else if (e.code == 'user-not-found') {
-        return 'Пользователь не найден';
+        return const Failed('Пользователь не найден');
       } else {
-        return e.code;
+        return Failed(e.code);
       }
     } catch (e) {
-      return e.toString();
+      return Failed(e.toString());
     }
   }
 
@@ -80,6 +102,15 @@ class EmailPasswordAuthScreen extends StatelessWidget {
                     return "Required field";
                   },
                 ),
+                TextFormField(
+                  controller: usernameController,
+                  validator: (value) {
+                    if (value?.trim().isNotEmpty == true) {
+                      return null;
+                    }
+                    return "Required field";
+                  },
+                ),
                 const SizedBox(height: 20),
                 TextFormField(
                   controller: passwordController,
@@ -96,10 +127,14 @@ class EmailPasswordAuthScreen extends StatelessWidget {
                     if (_formKey.currentState?.validate() != true) {
                       return;
                     }
-                    signIn().then((error) {
-                      if (error != null) {
+                    signIn().then((response) {
+                      if (response.runtimeType is Failed) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text(error)),
+                          SnackBar(
+                            content: Text(
+                              response.error ?? "Неизвестная ошибка",
+                            ),
+                          ),
                         );
                       } else {
                         ScaffoldMessenger.of(context).showSnackBar(
@@ -107,6 +142,7 @@ class EmailPasswordAuthScreen extends StatelessWidget {
                             content: Text('Успешная авторизация'),
                           ),
                         );
+                        Navigator.of(context).pushReplacementNamed('/profile');
                       }
                     });
                   },
@@ -121,17 +157,22 @@ class EmailPasswordAuthScreen extends StatelessWidget {
                     if (_formKey.currentState?.validate() != true) {
                       return;
                     }
-                    signUp().then((error) {
-                      if (error != null) {
+                    signUp().then((response) {
+                      if (response.runtimeType is Failed) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text(error)),
+                          SnackBar(
+                            content: Text(
+                              response.error ?? "Неизвестная ошибка",
+                            ),
+                          ),
                         );
                       } else {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
-                            content: Text('Успешная регистрация'),
+                            content: Text('Успешная авторизация'),
                           ),
                         );
+                        Navigator.of(context).pushReplacementNamed('/profile');
                       }
                     });
                   },
