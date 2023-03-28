@@ -59,6 +59,7 @@ class EmailPasswordAuthScreen extends StatelessWidget {
         authUid: uid,
         username: emailController.text,
       );
+      print(profile?.username);
       if (profile == null) {
         return const Failed("Ошибка при создании профиля");
       }
@@ -128,7 +129,7 @@ class EmailPasswordAuthScreen extends StatelessWidget {
                       return;
                     }
                     signIn().then((response) {
-                      if (response.runtimeType is Failed) {
+                      if (!response.success) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text(
@@ -158,7 +159,7 @@ class EmailPasswordAuthScreen extends StatelessWidget {
                       return;
                     }
                     signUp().then((response) {
-                      if (response.runtimeType is Failed) {
+                      if (!response.success) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text(
@@ -169,7 +170,7 @@ class EmailPasswordAuthScreen extends StatelessWidget {
                       } else {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
-                            content: Text('Успешная авторизация'),
+                            content: Text('Успешная регисьрация'),
                           ),
                         );
                         Navigator.of(context).pushReplacementNamed('/profile');
