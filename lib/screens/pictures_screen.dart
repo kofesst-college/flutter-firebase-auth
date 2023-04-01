@@ -47,6 +47,11 @@ class PicturesScreen extends StatelessWidget {
     }
   }
 
+  Future deletePicture(String name) async {
+    final storage = FirebaseStorage.instance;
+    await storage.ref(name).delete();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -67,17 +72,26 @@ class PicturesScreen extends StatelessWidget {
                 if (!snapshot.hasData) return const CircularProgressIndicator();
                 final data = snapshot.data;
                 if (data == null) return const Text('Произошла ошибка');
-                return ListView.builder(
-                  itemCount: data.length,
-                  shrinkWrap: true,
-                  itemBuilder: (_, index) {
-                    final item = data[index];
-                    return ListTile(
-                      leading: Image.network(item.url),
-                      title: Text(item.name),
-                      subtitle: Text("${item.bytesSize} байт"),
-                    );
-                  },
+                return Expanded(
+                  child: ListView.builder(
+                    itemCount: data.length,
+                    scrollDirection: Axis.vertical,
+                    shrinkWrap: true,
+                    itemBuilder: (_, index) {
+                      final item = data[index];
+                      return ListTile(
+                        leading: Image.network(item.url),
+                        title: Text(item.name),
+                        subtitle: Text("${item.bytesSize} байт\n${item.url}"),
+                        trailing: IconButton(
+                          icon: const Icon(Icons.delete),
+                          onPressed: () {
+                            deletePicture(item.name);
+                          },
+                        ),
+                      );
+                    },
+                  ),
                 );
               }),
         ],
